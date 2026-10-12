@@ -8,9 +8,8 @@ FROM ${NODE_IMAGE} AS source
 WORKDIR /source
 ADD https://codeload.github.com/decolua/9router/tar.gz/ce4460ef79382bfddb4aa5fc0ff9f3cb0d5f95a8 /tmp/upstream.tar.gz
 RUN tar -xzf /tmp/upstream.tar.gz --strip-components=1 -C /source
-# Upstream status only checks a stored password hash, overlooking INITIAL_PASSWORD.
-# Report the configured bootstrap password so the login UI does not suggest 123456.
-RUN node -e "const fs=require('fs');const p='/source/src/app/api/auth/status/route.js';const s=fs.readFileSync(p,'utf8');const a='hasPassword: !!settings.password,';if(s.split(a).length!==2)throw Error('Upstream auth status changed; review patch');fs.writeFileSync(p,s.replace(a,'hasPassword: !!settings.password || !!process.env.INITIAL_PASSWORD,'));"
+COPY patch-upstream.mjs /tmp/patch-upstream.mjs
+RUN node /tmp/patch-upstream.mjs /source
 
 FROM ${NODE_IMAGE} AS base
 ARG ALPINE_MIRROR
